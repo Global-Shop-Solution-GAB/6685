@@ -1,0 +1,49 @@
+﻿Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Function.Intrinsic.UI.UsePixels ' Allows you to use Pixels instead of Twips throughout
+'for International Container
+'by Josh Withrow
+'Purpose: When creating a WO with relationship to SOLine, copy SOLine User 1-5 to WO User 1-5
+'Packaged with Bar Code Router Ext with mods to suit customers requirement.
+'
+'JBS0011 - WO Operations New/Edit
+'	16800 POST OK
+'		009000 JOB
+'		009001 SUFFIX
+
+F.Intrinsic.Control.Try
+
+	V.Local..BulkDeclareString(sSQL)
+	
+	F.ODBC.Connection!con.OpenCompanyConnection()
+	F.Intrinsic.String.Build("select 1 from WO_USER_FLDS where JOB = '{0}' and SUFFIX = '{1}'",V.Passed.009000,V.Passed.009001,V.Local.sSQL)
+	F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sSQL)
+	F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+		'Insert
+		F.Intrinsic.String.Build("insert into WO_USER_FLDS select A.JOB, A.SUFFIX, C.USER_1, C.USER_2, C.USER_3, C.USER_4, C.USER_5, '' as USER_6, '' as USER_7, '' as USER_8, '' as USER_9, '' as USER_10 from V_JOB_HEADER A left outer join V_ORDER_LINES C on A.SALES_ORDER=C.ORDER_NO and A.SALES_ORDER_LINE=left(C.RECORD_NO, 3) where A.JOB='{0}' and A.SUFFIX='{1}'",V.Passed.009000,V.Passed.009001,V.Local.sSQL)
+	F.Intrinsic.Control.Else
+		'Update
+		F.Intrinsic.String.Build("UPDATE WO_USER_FLDS SET WO_USER_FLDS.USER_1=C.USER_1, WO_USER_FLDS.USER_2=C.USER_2, WO_USER_FLDS.USER_3=C.USER_3, WO_USER_FLDS.USER_4=C.USER_4, WO_USER_FLDS.USER_5=C.USER_5 from WO_USER_FLDS left outer join V_ORDER_TO_WO B on WO_USER_FLDS.JOB=B.JOB and WO_USER_FLDS.SUFFIX=B.SUFFIX left outer join V_ORDER_LINES C on B.ORDER_NO=C.ORDER_NO and B.ORDER_LINE=left(C.RECORD_NO, 3) where WO_USER_FLDS.JOB='{0}' and WO_USER_FLDS.SUFFIX='{1}'",V.Passed.009000,V.Passed.009001,V.Local.sSQL)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+	F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(Catching,"Sub",V.Ambient.CurrentSubroutine,"ErrorNo",V.Ambient.ErrorNumber,"ErrorDesc",V.Ambient.ErrorDescription) 
+F.Intrinsic.Control.EndTry
+
+Program.Sub.Main.End
+
+Program.Sub.Catching.Start
+V.Local..BulkDeclareString(sError)
+F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}",V.Caller.ScriptFile,V.Ambient.NewLine,V.Args.Sub,V.Args.ErrorNo,V.Args.ErrorDesc,V.Local.sError)
+F.Intrinsic.UI.Msgbox(V.Local.sError,"GAB Execution Error")
+F.Intrinsic.Control.End
+Program.Sub.Catching.End
+
+Program.Sub.Comments.Start
+${$5$}$3.0.0.0$}$1
+${$6$}$bbaker$}$20220614113553905$}$pM7xsHplA2E9VCTenDTJ47gi1rF/t66WLa945Jcoqmhona08oheuWOey6X/pTxBOOZr8tU66+zM=
+Program.Sub.Comments.End
